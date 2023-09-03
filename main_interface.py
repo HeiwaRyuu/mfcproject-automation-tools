@@ -1,6 +1,8 @@
 ## CREATE A TIKINTER INTERFACE THAT HAS 2 BUTTONS, ONE THAT OPENS THE STANDARD TABS
 ## AND ANOTHER THAT SWITCHES TKINTER FRAME TO ANOTHER FRAME WITHIN THE FILE post_description_file_generator.py
 import os
+import shutil
+import time
 from tkinter import *
 import tkinter as tk
 from tkinter import ttk
@@ -14,6 +16,10 @@ import pandas as pd
 from sql_connect import connect_to_sql
 from generate_sql_db_if_not_exists import create_database, create_tables
 from sql_utils import *
+import json
+## DOWNLOADING INSTAGRAM POSTS
+import instaloader
+from instaloader import *
 
 ## GENERAL SETTINGS
 STANDARD_SIZE=(600, 400)
@@ -23,9 +29,12 @@ STANDARD_Y_PADDING = 10
 STANDARD_Y_POSITION = 75 ## THIS LINES UP ALL THE MAIN 4 BUTTONS VERTICALLY
 MAIN_BG_COLOR = '#F0F8FF'
 STANDARD_LABEL_HEIGHT_REDUCER = 0.5
+DOWNLOAD_CONFIG_FILE_NAME = "download_config.json"
+DOWNLOAD_REPOSITORY_CONFIG = os.getcwd() + f"\\config\\"
+DOWNLOAD_REPOSITORY = os.getcwd() + "\\MediaDownload"    
 
 ## BUTTONS SETTINGS
-STANDARD_BUTTON_DIMENSIONS = (150, 50)
+STANDARD_BUTTON_DIMENSIONS = (150, 40)
 STANDARD_LABEL_DIMENSIONS = (250, 50)
 
 ##############################################################################################################################################
@@ -55,7 +64,11 @@ EDIT_LOCAL_PATHS_BUTTON_Y_POSITION = OPEN_FOLDERS_BUTTON_Y_POSITION + OPEN_FOLDE
 
 POST_DESCRIPTION_FILE_GENERATOR_BUTTON_DIMENSIONS = (STANDARD_BUTTON_DIMENSIONS[0]*2, STANDARD_BUTTON_DIMENSIONS[1])
 POST_DESCRIPTION_FILE_GENERATOR_BUTTON_X_POSITION = (STANDARD_SIZE[0]/2)-(POST_DESCRIPTION_FILE_GENERATOR_BUTTON_DIMENSIONS[0]/2)
-POST_DESCRIPTION_FILE_GENERATOR_BUTTON_Y_POSITION = 200
+POST_DESCRIPTION_FILE_GENERATOR_BUTTON_Y_POSITION = EDIT_URLS_Y_POSITION + EDIT_URLS_BUTTON_DIMENSIONS[1] + STANDARD_Y_PADDING
+
+DOWNLOAD_INSTAGRAM_POSTS_EDIT_BUTTON_DIMENSIONS = (STANDARD_BUTTON_DIMENSIONS[0]*2, STANDARD_BUTTON_DIMENSIONS[1])
+DOWNLOAD_INSTAGRAM_POSTS_EDIT_BUTTON_X_POSITION = (STANDARD_SIZE[0]/2)-(DOWNLOAD_INSTAGRAM_POSTS_EDIT_BUTTON_DIMENSIONS[0]/2)
+DOWNLOAD_INSTAGRAM_POSTS_EDIT_BUTTON_Y_POSITION = POST_DESCRIPTION_FILE_GENERATOR_BUTTON_Y_POSITION + POST_DESCRIPTION_FILE_GENERATOR_BUTTON_DIMENSIONS[1] + STANDARD_Y_PADDING
 ##############################################################################################################################################
 ## EDIT URLS WINDOW SETTINGS
 ## LABEL
@@ -210,6 +223,77 @@ CREATE_FILES_BUTTON_DIMENSIONS = (STANDARD_BUTTON_DIMENSIONS[0], STANDARD_BUTTON
 CREATE_FILES_BUTTON_X_POSITION = (STANDARD_SIZE[0]/2)-(CREATE_FILES_BUTTON_DIMENSIONS[0]/2)
 CREATE_FILES_BUTTON_Y_POSITION = INITIAL_POST_NUMBER_ENTRY_Y_POSITION + INITIAL_POST_NUMBER_ENTRY_DIMENSIONS[1] + STANDARD_Y_PADDING
 ##############################################################################################################################################
+## DOWNLOAD INSTAGRAM POSTS WINDOW SETTINGS
+## LABELS
+DOWNLOAD_INSTAGRAM_POSTS_WINDOW_LABEL_DIMENSIONS = (STANDARD_LABEL_DIMENSIONS[0]*1.3, STANDARD_LABEL_DIMENSIONS[1])
+DOWNLOAD_INSTAGRAM_POSTS_WINDOW_LABEL_X_POSITION = (STANDARD_SIZE[0]/2)-(DOWNLOAD_INSTAGRAM_POSTS_WINDOW_LABEL_DIMENSIONS[0]/2)
+DOWNLOAD_INSTAGRAM_POSTS_WINDOW_LABEL_Y_POSITION = STANDARD_Y_PADDING
+
+## LINK LABEL
+DOWNLOAD_INSTAGRAM_POSTS_LINK_LABEL_DIMENSIONS = (STANDARD_LABEL_DIMENSIONS[0], STANDARD_LABEL_DIMENSIONS[1]*STANDARD_LABEL_HEIGHT_REDUCER)
+DOWNLOAD_INSTAGRAM_POSTS_LINK_LABEL_X_POSITION = (STANDARD_SIZE[0]/2)-(DOWNLOAD_INSTAGRAM_POSTS_LINK_LABEL_DIMENSIONS[0]/2)
+DOWNLOAD_INSTAGRAM_POSTS_LINK_LABEL_Y_POSITION = DOWNLOAD_INSTAGRAM_POSTS_WINDOW_LABEL_Y_POSITION + DOWNLOAD_INSTAGRAM_POSTS_WINDOW_LABEL_DIMENSIONS[1] + STANDARD_Y_PADDING
+
+## LINK ENTRY AND DOWNLOAD BUTTON
+DOWNLOAD_INSTAGRAM_POSTS_LINK_ENTRY_DIMENSIONS = (STANDARD_BUTTON_DIMENSIONS[0], STANDARD_BUTTON_DIMENSIONS[1])
+DOWNLOAD_INSTAGRAM_POSTS_DOWNLOAD_BUTTON_DIMENSIONS = (STANDARD_BUTTON_DIMENSIONS[0], STANDARD_BUTTON_DIMENSIONS[1])
+
+DOWNLOAD_INSTAGRAM_POSTS_LINK_ENTRY_X_POSITION = (STANDARD_SIZE[0]/2)-((DOWNLOAD_INSTAGRAM_POSTS_LINK_ENTRY_DIMENSIONS[0]+DOWNLOAD_INSTAGRAM_POSTS_DOWNLOAD_BUTTON_DIMENSIONS[0]+STANDARD_X_PADDING)/2)
+DOWNLOAD_INSTAGRAM_POSTS_LINK_ENTRY_Y_POSITION = DOWNLOAD_INSTAGRAM_POSTS_LINK_LABEL_Y_POSITION + DOWNLOAD_INSTAGRAM_POSTS_LINK_LABEL_DIMENSIONS[1] + STANDARD_Y_PADDING
+DOWNLOAD_INSTAGRAM_POSTS_DOWNLOAD_BUTTON_X_POSITION = DOWNLOAD_INSTAGRAM_POSTS_LINK_ENTRY_X_POSITION + DOWNLOAD_INSTAGRAM_POSTS_LINK_ENTRY_DIMENSIONS[0] + STANDARD_X_PADDING
+DOWNLOAD_INSTAGRAM_POSTS_DOWNLOAD_BUTTON_Y_POSITION = DOWNLOAD_INSTAGRAM_POSTS_LINK_ENTRY_Y_POSITION
+
+## FILE NAME ENTRY AND LABEL
+DOWNLOAD_INSTAGRAM_POSTS_FILE_NAME_ENTRY_DIMENSIONS = (STANDARD_BUTTON_DIMENSIONS[0], STANDARD_BUTTON_DIMENSIONS[1])
+DOWNLOAD_INSTAGRAM_POSTS_FILE_NAME_LABEL_DIMENSIONS = (STANDARD_LABEL_DIMENSIONS[0], STANDARD_LABEL_DIMENSIONS[1]*STANDARD_LABEL_HEIGHT_REDUCER)
+
+DOWNLOAD_INSTAGRAM_POSTS_FILE_NAME_LABEL_X_POSITION = (STANDARD_SIZE[0]/2)-(DOWNLOAD_INSTAGRAM_POSTS_FILE_NAME_LABEL_DIMENSIONS[0]/2)
+DOWNLOAD_INSTAGRAM_POSTS_FILE_NAME_LABEL_Y_POSITION = DOWNLOAD_INSTAGRAM_POSTS_DOWNLOAD_BUTTON_Y_POSITION + DOWNLOAD_INSTAGRAM_POSTS_DOWNLOAD_BUTTON_DIMENSIONS[1] + STANDARD_Y_PADDING
+DOWNLOAD_INSTAGRAM_POSTS_FILE_NAME_ENTRY_X_POSITION = (STANDARD_SIZE[0]/2)-(DOWNLOAD_INSTAGRAM_POSTS_FILE_NAME_ENTRY_DIMENSIONS[0]/2)
+DOWNLOAD_INSTAGRAM_POSTS_FILE_NAME_ENTRY_Y_POSITION = DOWNLOAD_INSTAGRAM_POSTS_FILE_NAME_LABEL_Y_POSITION + DOWNLOAD_INSTAGRAM_POSTS_FILE_NAME_LABEL_DIMENSIONS[1] + STANDARD_Y_PADDING
+
+## LABEL SHOW CURRENT DOWNLOAD REPOSITORY
+DOWNLOAD_INSTAGRAM_POSTS_DOWNLOAD_PATH_LABEL_DIMENSIONS = (STANDARD_LABEL_DIMENSIONS[0], STANDARD_LABEL_DIMENSIONS[1]*STANDARD_LABEL_HEIGHT_REDUCER)
+DOWNLOAD_INSTAGRAM_POSTS_DOWNLOAD_PATH_LABEL_X_POSITION = (STANDARD_SIZE[0]/2)-(DOWNLOAD_INSTAGRAM_POSTS_DOWNLOAD_PATH_LABEL_DIMENSIONS[0]/2)
+DOWNLOAD_INSTAGRAM_POSTS_DOWNLOAD_PATH_LABEL_Y_POSITION = DOWNLOAD_INSTAGRAM_POSTS_FILE_NAME_ENTRY_Y_POSITION + DOWNLOAD_INSTAGRAM_POSTS_FILE_NAME_ENTRY_DIMENSIONS[1] + STANDARD_Y_PADDING
+
+## CHANGE DOWNLOAD ENTRY AND BROWSE BUTTON
+DOWNLOAD_INSTAGRAM_POSTS_CHANGE_DOWNLOAD_PATH_BUTTON_DIMENSIONS = (STANDARD_BUTTON_DIMENSIONS[0], STANDARD_BUTTON_DIMENSIONS[1])
+DOWNLOAD_INSTAGRAM_POSTS_DOWNLOAD_PATH_ENTRY_DIMENSIONS = (STANDARD_BUTTON_DIMENSIONS[0], STANDARD_BUTTON_DIMENSIONS[1])
+
+DOWNLOAD_INSTAGRAM_POSTS_DOWNLOAD_PATH_ENTRY_X_POSITION = (STANDARD_SIZE[0]/2)-((DOWNLOAD_INSTAGRAM_POSTS_CHANGE_DOWNLOAD_PATH_BUTTON_DIMENSIONS[0]+DOWNLOAD_INSTAGRAM_POSTS_DOWNLOAD_PATH_ENTRY_DIMENSIONS[0]+STANDARD_X_PADDING)/2)
+DOWNLOAD_INSTAGRAM_POSTS_DOWNLOAD_PATH_ENTRY_Y_POSITION = DOWNLOAD_INSTAGRAM_POSTS_DOWNLOAD_PATH_LABEL_Y_POSITION + DOWNLOAD_INSTAGRAM_POSTS_DOWNLOAD_PATH_LABEL_DIMENSIONS[1] + STANDARD_Y_PADDING
+DOWNLOAD_INSTAGRAM_POSTS_CHANGE_DOWNLOAD_PATH_BUTTON_X_POSITION = DOWNLOAD_INSTAGRAM_POSTS_DOWNLOAD_PATH_ENTRY_X_POSITION + DOWNLOAD_INSTAGRAM_POSTS_DOWNLOAD_PATH_ENTRY_DIMENSIONS[0] + STANDARD_X_PADDING
+DOWNLOAD_INSTAGRAM_POSTS_CHANGE_DOWNLOAD_PATH_BUTTON_Y_POSITION = DOWNLOAD_INSTAGRAM_POSTS_DOWNLOAD_PATH_ENTRY_Y_POSITION
+
+## BACK BUTTON
+DOWNLOAD_INSTAGRAM_POSTS_BACK_BUTTON_DIMENSIONS = (STANDARD_BUTTON_DIMENSIONS[0], STANDARD_BUTTON_DIMENSIONS[1])
+DOWNLOAD_INSTAGRAM_POSTS_BACK_BUTTON_X_POSITION = (STANDARD_SIZE[0]/2)-(DOWNLOAD_INSTAGRAM_POSTS_BACK_BUTTON_DIMENSIONS[0]/2)
+DOWNLOAD_INSTAGRAM_POSTS_BACK_BUTTON_Y_POSITION = DOWNLOAD_INSTAGRAM_POSTS_CHANGE_DOWNLOAD_PATH_BUTTON_Y_POSITION + DOWNLOAD_INSTAGRAM_POSTS_CHANGE_DOWNLOAD_PATH_BUTTON_DIMENSIONS[1] + STANDARD_Y_PADDING
+##############################################################################################################################################
+## DOWNLOAD PROGRESS WINDOW SETTINGS
+## LABELS
+DOWNLOADING_POST_PROGRESS_WINDOW_LABEL_DIMENSIONS = (STANDARD_LABEL_DIMENSIONS[0]*1.3, STANDARD_LABEL_DIMENSIONS[1])
+DOWNLOADING_POST_PROGRESS_WINDOW_LABEL_X_POSITION = (STANDARD_SIZE[0]/2)-(DOWNLOADING_POST_PROGRESS_WINDOW_LABEL_DIMENSIONS[0]/2)
+DOWNLOADING_POST_PROGRESS_WINDOW_LABEL_Y_POSITION = STANDARD_Y_PADDING
+
+## PROGRESS BAR
+DOWNLOADING_POST_PROGRESS_BAR_DIMENSIONS = (STANDARD_BUTTON_DIMENSIONS[0]*2, STANDARD_BUTTON_DIMENSIONS[1])
+DOWNLOADING_POST_PROGRESS_BAR_X_POSITION = (STANDARD_SIZE[0]/2)-(DOWNLOADING_POST_PROGRESS_BAR_DIMENSIONS[0]/2)
+DOWNLOADING_POST_PROGRESS_BAR_Y_POSITION = DOWNLOADING_POST_PROGRESS_WINDOW_LABEL_Y_POSITION + DOWNLOADING_POST_PROGRESS_WINDOW_LABEL_DIMENSIONS[1] + STANDARD_Y_PADDING
+
+## LABEL PROGRESS
+DOWNLOADING_POST_PROGRESS_LABEL_DIMENSIONS = (STANDARD_LABEL_DIMENSIONS[0], STANDARD_LABEL_DIMENSIONS[1]*STANDARD_LABEL_HEIGHT_REDUCER)
+DOWNLOADING_POST_PROGRESS_LABEL_X_POSITION = (STANDARD_SIZE[0]/2)-(DOWNLOADING_POST_PROGRESS_LABEL_DIMENSIONS[0]/2)
+DOWNLOADING_POST_PROGRESS_LABEL_Y_POSITION = DOWNLOADING_POST_PROGRESS_BAR_Y_POSITION + DOWNLOADING_POST_PROGRESS_BAR_DIMENSIONS[1] + STANDARD_Y_PADDING
+
+
+## BACK BUTTON
+DOWNLOADING_POST_PROGRESS_BACK_BUTTON_DIMENSIONS = (STANDARD_BUTTON_DIMENSIONS[0], STANDARD_BUTTON_DIMENSIONS[1])
+DOWNLOADING_POST_PROGRESS_BACK_BUTTON_X_POSITION = (STANDARD_SIZE[0]/2)-(DOWNLOADING_POST_PROGRESS_BACK_BUTTON_DIMENSIONS[0]/2)
+DOWNLOADING_POST_PROGRESS_BACK_BUTTON_Y_POSITION = DOWNLOADING_POST_PROGRESS_LABEL_Y_POSITION + DOWNLOADING_POST_PROGRESS_LABEL_DIMENSIONS[1] + STANDARD_Y_PADDING
+##############################################################################################################################################
+
 
 def center(root, WINDOW_SIZE):
     root.update_idletasks()  # Update "requested size" from geometry manager
@@ -260,6 +344,9 @@ class MainInterface:
 
         self.open_post_description_file_generator_button = ttk.Button(master, text="Post Description File Generator", command=self.open_post_description_file_generator)
         self.open_post_description_file_generator_button.place(width=POST_DESCRIPTION_FILE_GENERATOR_BUTTON_DIMENSIONS[0], height=POST_DESCRIPTION_FILE_GENERATOR_BUTTON_DIMENSIONS[1], x=POST_DESCRIPTION_FILE_GENERATOR_BUTTON_X_POSITION, y=POST_DESCRIPTION_FILE_GENERATOR_BUTTON_Y_POSITION)
+
+        self.download_instagram_posts = ttk.Button(master, text="Download Instagram Posts", command=self.download_instagram_posts)
+        self.download_instagram_posts.place(width=DOWNLOAD_INSTAGRAM_POSTS_EDIT_BUTTON_DIMENSIONS[0], height=DOWNLOAD_INSTAGRAM_POSTS_EDIT_BUTTON_DIMENSIONS[1], x=DOWNLOAD_INSTAGRAM_POSTS_EDIT_BUTTON_X_POSITION, y=DOWNLOAD_INSTAGRAM_POSTS_EDIT_BUTTON_Y_POSITION)
         
 
     def open_tabs(self):
@@ -301,17 +388,20 @@ class MainInterface:
         self.newWindow = Toplevel(self.master)
         self.app = EditUrls(self.newWindow)
 
-
     def edit_local_paths(self):
         self.master.withdraw()
         self.newWindow = Toplevel(self.master)
         self.app = EditLocalPaths(self.newWindow)
 
-
     def open_post_description_file_generator(self):
         self.master.withdraw()
         self.newWindow = Toplevel(self.master)
         self.app = PostDescriptionFileGenerator(self.newWindow)
+
+    def download_instagram_posts(self):
+        self.master.withdraw()
+        self.newWindow = Toplevel(self.master)
+        self.app = DownloadInstagramPosts(self.newWindow)
 
 
 ##############################################################################################################
@@ -376,8 +466,8 @@ class PostDescriptionFileGenerator:
 
     def clicked(self):
         try:
-            num_of_posts = int(self.entry1.get())
-            initial_post_number = int(self.entry2.get())
+            num_of_posts = int(self.lbl_number_of_posts.get())
+            initial_post_number = int(self.lbl_initial_post_number.get())
         except ValueError:
             messagebox.showerror("Error", "Please enter a valid number")
             return
@@ -524,9 +614,9 @@ class DeleteUrls:
         self.options = self.set_dropdown()
 
         if self.options:
-            self.option_menu = ttk.OptionMenu(master, self.option_menu_variable, *self.options)
+            self.option_menu = OptionMenu(master, self.option_menu_variable, *self.options)
         else:
-            self.option_menu = ttk.OptionMenu(master, self.option_menu_variable, "No URLs to delete")
+            self.option_menu = OptionMenu(master, self.option_menu_variable, "No URLs to delete")
         self.option_menu.place(width=DELETE_URLS_OPTION_MENU_DIMENSIONS[0], height=DELETE_URLS_OPTION_MENU_DIMENSIONS[1], x=DELETE_URL_OPTION_MENU_X_POSITION, y=DELETE_URL_OPTION_MENU_Y_POSITION)
 
         self.button = ttk.Button(master, text="Delete", command=self.delete)
@@ -670,7 +760,6 @@ class InsertNewLocalPath:
         self.button_back = ttk.Button(master, text="Back", command=self.back)
         self.button_back.place(width=INSERT_NEW_LOCAL_PATH_BACK_BUTTON_DIMENSIONS[0], height=INSERT_NEW_LOCAL_PATH_BACK_BUTTON_DIMENSIONS[1], x=INSERT_NEW_LOCAL_PATH_BACK_BUTTON_X_POSITION, y=INSERT_NEW_LOCAL_PATH_BACK_BUTTON_Y_POSITION)
 
-        
 
     def browse_local_folders(self):
         filename = filedialog.askdirectory()
@@ -729,9 +818,9 @@ class DeleteLocalPaths:
         self.options = self.set_dropdown()
 
         if self.options:
-            self.option_menu = ttk.OptionMenu(master, self.option_menu_variable, *self.options)
+            self.option_menu = OptionMenu(master, self.option_menu_variable, *self.options)
         else:
-            self.option_menu = ttk.OptionMenu(master, self.option_menu_variable, "No Local Paths to delete")
+            self.option_menu = OptionMenu(master, self.option_menu_variable, "No Local Paths to delete")
         self.option_menu.place(width=DELETE_LOCAL_PATHS_OPTION_MENU_DIMENSIONS[0], height=DELETE_LOCAL_PATHS_OPTION_MENU_DIMENSIONS[1], x=DELETE_LOCAL_PATHS_OPTION_MENU_X_POSITION, y=DELETE_LOCAL_PATHS_OPTION_MENU_Y_POSITION)
 
         self.button = ttk.Button(master, text="Delete", command=self.delete)
@@ -782,6 +871,233 @@ class DeleteLocalPaths:
         self.options = self.set_dropdown()
         if self.options:
             self.update_option_menu()
+
+
+##############################################################################################################
+##############################################################################################################
+
+##############################################################################################################
+class DownloadInstagramPosts:
+    def __init__(self, master):
+        WINDOW_SIZE = f"{STANDARD_SIZE[0]}x{STANDARD_SIZE[1]}"
+        self.master = master
+        master.title("Download Instagram Posts")
+        master.geometry(WINDOW_SIZE)
+        master.resizable(False, False)
+        master.configure(background='#F0F8FF')
+
+        ## MAKING SURE DOWNLOAD_PATH_EXISTS
+        self.ensure_download_path_exists()
+
+        ## OPENING WINDOW AT CENTER
+        center(master, WINDOW_SIZE)
+        
+        ## STYLES
+        self.style = ttk.Style(master)
+        self.style.theme_use("xpnative")
+
+        self.lbl_window = ttk.Label(master, anchor="center", text="Instagram Downloader", justify=tk.RIGHT, background=MAIN_BG_COLOR, font=("Helvetica", 14))
+        self.lbl_window.place(width=DOWNLOAD_INSTAGRAM_POSTS_WINDOW_LABEL_DIMENSIONS[0], height=DOWNLOAD_INSTAGRAM_POSTS_WINDOW_LABEL_DIMENSIONS[1], x=DOWNLOAD_INSTAGRAM_POSTS_WINDOW_LABEL_X_POSITION, y=DOWNLOAD_INSTAGRAM_POSTS_WINDOW_LABEL_Y_POSITION)
+
+        self.lbl_download_link = ttk.Label(master, anchor="center", text="Instagram Link", justify=tk.RIGHT, background=MAIN_BG_COLOR)
+        self.lbl_download_link.place(width=DOWNLOAD_INSTAGRAM_POSTS_LINK_LABEL_DIMENSIONS[0], height=DOWNLOAD_INSTAGRAM_POSTS_LINK_LABEL_DIMENSIONS[1], x=DOWNLOAD_INSTAGRAM_POSTS_LINK_LABEL_X_POSITION, y=DOWNLOAD_INSTAGRAM_POSTS_LINK_LABEL_Y_POSITION)
+
+        self.entry_download_link = ttk.Entry(master, width=10)
+        self.entry_download_link.place(width=DOWNLOAD_INSTAGRAM_POSTS_LINK_ENTRY_DIMENSIONS[0], height=DOWNLOAD_INSTAGRAM_POSTS_LINK_ENTRY_DIMENSIONS[1], x=DOWNLOAD_INSTAGRAM_POSTS_LINK_ENTRY_X_POSITION, y=DOWNLOAD_INSTAGRAM_POSTS_LINK_ENTRY_Y_POSITION)
+
+        ## CREATE A BUTTON THAT DOWNLOADS THE POST
+        self.button_download = ttk.Button(master, text="Download", command=self.download)
+        self.button_download.place(width=DOWNLOAD_INSTAGRAM_POSTS_DOWNLOAD_BUTTON_DIMENSIONS[0], height=DOWNLOAD_INSTAGRAM_POSTS_DOWNLOAD_BUTTON_DIMENSIONS[1], x=DOWNLOAD_INSTAGRAM_POSTS_DOWNLOAD_BUTTON_X_POSITION, y=DOWNLOAD_INSTAGRAM_POSTS_DOWNLOAD_BUTTON_Y_POSITION)
+
+        ## FILE NAME ENTRY
+        self.entry_file_name = ttk.Entry(master, width=10)
+        self.entry_file_name.place(width=DOWNLOAD_INSTAGRAM_POSTS_FILE_NAME_ENTRY_DIMENSIONS[0], height=DOWNLOAD_INSTAGRAM_POSTS_FILE_NAME_ENTRY_DIMENSIONS[1], x=DOWNLOAD_INSTAGRAM_POSTS_FILE_NAME_ENTRY_X_POSITION, y=DOWNLOAD_INSTAGRAM_POSTS_FILE_NAME_ENTRY_Y_POSITION)
+
+        ## FILE NAME LABEL
+        self.label_file_name = ttk.Label(master, anchor="center", text="File Name", justify=tk.RIGHT, background=MAIN_BG_COLOR)
+        self.label_file_name.place(width=DOWNLOAD_INSTAGRAM_POSTS_FILE_NAME_LABEL_DIMENSIONS[0], height=DOWNLOAD_INSTAGRAM_POSTS_FILE_NAME_LABEL_DIMENSIONS[1], x=DOWNLOAD_INSTAGRAM_POSTS_FILE_NAME_LABEL_X_POSITION, y=DOWNLOAD_INSTAGRAM_POSTS_FILE_NAME_LABEL_Y_POSITION)
+
+        ## SHOWING THE USER THE CURRENT DOWNLOAD PATH
+        self.label_show_download_path = ttk.Label(master, anchor="center", text="Download Path", justify=tk.RIGHT, background=MAIN_BG_COLOR)
+        self.label_show_download_path.place(width=DOWNLOAD_INSTAGRAM_POSTS_DOWNLOAD_PATH_LABEL_DIMENSIONS[0], height=DOWNLOAD_INSTAGRAM_POSTS_DOWNLOAD_PATH_LABEL_DIMENSIONS[1], x=DOWNLOAD_INSTAGRAM_POSTS_DOWNLOAD_PATH_LABEL_X_POSITION, y=DOWNLOAD_INSTAGRAM_POSTS_DOWNLOAD_PATH_LABEL_Y_POSITION)
+
+        self.entry_current_download_path = ttk.Entry(master, width=10)
+        self.entry_current_download_path.place(width=DOWNLOAD_INSTAGRAM_POSTS_DOWNLOAD_PATH_ENTRY_DIMENSIONS[0], height=DOWNLOAD_INSTAGRAM_POSTS_DOWNLOAD_PATH_ENTRY_DIMENSIONS[1], x=DOWNLOAD_INSTAGRAM_POSTS_DOWNLOAD_PATH_ENTRY_X_POSITION, y=DOWNLOAD_INSTAGRAM_POSTS_DOWNLOAD_PATH_ENTRY_Y_POSITION)
+        self.path = self.fetch_current_download_path()
+        self.entry_current_download_path.insert(END, self.path)
+
+        ## CREATE A BUTTON SO THE USER CAN CHANGE THE DOWNLOAD_PATH
+        self.button_change_download_path = ttk.Button(master, text="Change Download Path", command=self.change_download_path)
+        self.button_change_download_path.place(width=DOWNLOAD_INSTAGRAM_POSTS_CHANGE_DOWNLOAD_PATH_BUTTON_DIMENSIONS[0], height=DOWNLOAD_INSTAGRAM_POSTS_CHANGE_DOWNLOAD_PATH_BUTTON_DIMENSIONS[1], x=DOWNLOAD_INSTAGRAM_POSTS_CHANGE_DOWNLOAD_PATH_BUTTON_X_POSITION, y=DOWNLOAD_INSTAGRAM_POSTS_CHANGE_DOWNLOAD_PATH_BUTTON_Y_POSITION)
+
+        ## CREATE A BUTTON THAT GOES BACK TO THE MAIN INTERFACE
+        self.button_back = ttk.Button(master, text="Back", command=self.back)
+        self.button_back.place(width=DOWNLOAD_INSTAGRAM_POSTS_BACK_BUTTON_DIMENSIONS[0], height=DOWNLOAD_INSTAGRAM_POSTS_BACK_BUTTON_DIMENSIONS[1], x=DOWNLOAD_INSTAGRAM_POSTS_BACK_BUTTON_X_POSITION, y=DOWNLOAD_INSTAGRAM_POSTS_BACK_BUTTON_Y_POSITION)
+
+    def back(self):
+        self.master.withdraw()
+        self.newWindow = Toplevel(self.master)
+        self.app = MainInterface(self.newWindow)
+
+    def ensure_download_path_exists(self):
+        ## CHECK IF THE DOWNLOAD PATH FILE EXISTS
+        if not os.path.exists(DOWNLOAD_REPOSITORY_CONFIG):
+            os.makedirs(DOWNLOAD_REPOSITORY_CONFIG)
+            ## CREATE A JSON FILE WITH THE PATH TO THE DOWNLOAD REPOSITORY
+            download_repository = {"download_repository": DOWNLOAD_REPOSITORY_CONFIG}
+            with open(DOWNLOAD_REPOSITORY_CONFIG+DOWNLOAD_CONFIG_FILE_NAME, "w") as file:
+                json.dump(download_repository, file)
+                
+    def fetch_current_download_path(self):
+        ## READ JSON CONFIG FILE
+        with open(DOWNLOAD_REPOSITORY_CONFIG+DOWNLOAD_CONFIG_FILE_NAME, "r") as file:
+            data = json.load(file)
+        return data["download_repository"]
+
+    def change_download_path(self):
+        ## CHANGE THE JSON CONFIG FILE WITH THE NEW DOWNLOAD PATH
+        new_download_path = filedialog.askdirectory()
+        download_repository = {"download_repository": new_download_path}
+        with open(DOWNLOAD_REPOSITORY_CONFIG+DOWNLOAD_CONFIG_FILE_NAME, "w") as file:
+            json.dump(download_repository, file)
+        ## TELL THE USER DOWNLOAD PATH HAS BEEN CHANGED
+        if new_download_path == "":
+            messagebox.showerror("Error", "You havent select any path, no changes were made!")
+            return
+        else:
+            messagebox.showinfo("Success", f"Download Path changed successfully to:\n{new_download_path}")
+            self.entry_current_download_path.insert(END, new_download_path)
+            self.set_current_path()
+
+    def set_current_path(self):
+        ## SETTING THE DROPDOWN TO CHOSE FROM THE URLS IN THE TABLE local_paths_table
+        self.path = self.fetch_current_download_path()
+        self.entry_current_download_path.insert(END, self.path)
+
+    def download(self):
+        try:
+            url = self.entry_download_link.get()
+            if url == "":
+                messagebox.showerror("Error", "Please do not leave blank spaces!")
+                return
+        except ValueError:
+            messagebox.showerror("Error", "Please do not leave blank spaces!")
+            return
+        
+        try:
+            filename = self.entry_file_name.get()
+            if filename == "":
+                messagebox.showerror("Error", "Please do not leave filename blank!")
+                return
+        except ValueError:
+            messagebox.showerror("Error", "Please do not leave filename blank!")
+            return
+        
+        ## DOWNLOAD THE POST
+        ## FETCH THE CURRENT DOWNLOAD LINK
+        download_link = self.entry_download_link.get()
+
+        ## DOWNLOAD THE POST
+        self.open_download_progress(download_link, self.path, filename)
+
+        
+    ## CREATE A NEW WINDOW
+    def open_download_progress(self, download_link, path, filename):
+        self.newWindow = Toplevel(self.master)
+        self.app = DownloadingPostProgress(self.newWindow, download_link, path, filename)
+
+
+class DownloadingPostProgress:
+    def __init__(self, master, download_link, download_path, filename):
+        WINDOW_SIZE = f"{STANDARD_SIZE[0]}x{STANDARD_SIZE[1]}"
+        self.master = master
+        self.download_link = download_link
+        self.download_path = download_path
+        self.filename = filename
+        master.title("Downloading Post")
+        master.geometry(WINDOW_SIZE)
+        master.resizable(False, False)
+        master.configure(background='#F0F8FF')
+
+        ## OPENING WINDOW AT CENTER
+        center(master, WINDOW_SIZE)
+        
+        ## STYLES
+        self.style = ttk.Style(master)
+        self.style.theme_use("xpnative")
+
+        self.lbl_window = ttk.Label(master, anchor="center", text="Downloading Post", justify=tk.RIGHT, background=MAIN_BG_COLOR, font=("Helvetica", 14))
+        self.lbl_window.place(width=DOWNLOADING_POST_PROGRESS_WINDOW_LABEL_DIMENSIONS[0], height=DOWNLOADING_POST_PROGRESS_WINDOW_LABEL_DIMENSIONS[1], x=DOWNLOADING_POST_PROGRESS_WINDOW_LABEL_X_POSITION, y=DOWNLOADING_POST_PROGRESS_WINDOW_LABEL_Y_POSITION)
+
+        self.progress_bar = ttk.Progressbar(master, orient=HORIZONTAL, length=DOWNLOADING_POST_PROGRESS_BAR_DIMENSIONS[0], mode='determinate', value=0, maximum=100)
+        self.progress_bar.place(width=DOWNLOADING_POST_PROGRESS_BAR_DIMENSIONS[0], height=DOWNLOADING_POST_PROGRESS_BAR_DIMENSIONS[1], x=DOWNLOADING_POST_PROGRESS_BAR_X_POSITION, y=DOWNLOADING_POST_PROGRESS_BAR_Y_POSITION)
+
+        self.lbl_progress = ttk.Label(master, anchor="center", text="0%", justify=tk.RIGHT, background=MAIN_BG_COLOR)
+        self.lbl_progress.place(width=DOWNLOADING_POST_PROGRESS_LABEL_DIMENSIONS[0], height=DOWNLOADING_POST_PROGRESS_LABEL_DIMENSIONS[1], x=DOWNLOADING_POST_PROGRESS_LABEL_X_POSITION, y=DOWNLOADING_POST_PROGRESS_LABEL_Y_POSITION)
+
+        self.button_back = ttk.Button(master, text="Back", command=self.back)
+        self.button_back.place(width=DOWNLOADING_POST_PROGRESS_BACK_BUTTON_DIMENSIONS[0], height=DOWNLOADING_POST_PROGRESS_BACK_BUTTON_DIMENSIONS[1], x=DOWNLOADING_POST_PROGRESS_BACK_BUTTON_X_POSITION, y=DOWNLOADING_POST_PROGRESS_BACK_BUTTON_Y_POSITION)
+        
+        for i in range(1000):
+            if i == 999:
+                downloaded = self.download()
+                self.update_progress_bar(downloaded)
+
+        
+
+
+    def back(self):
+        self.master.withdraw()
+
+    ## IF PROGRESS BAR REACHES 100, SHOW USER DOWNLOAD WAS SUCCESSFUL
+    def update_progress_bar(self, downloaded):
+        if downloaded:
+            for i in range(101):
+                self.progress_bar['value'] = i
+                self.lbl_progress['text'] = f"{i}%"
+                self.master.update_idletasks()
+
+            if self.progress_bar['value'] == 100:
+                messagebox.showinfo("Success", "Download was successful!")
+                self.master.withdraw()
+        else:
+            messagebox.showerror("Error", "Download was not successful!")
+            self.master.withdraw()
+
+        
+
+
+    def download(self):
+        ## DOWNLOAD THE POST USING instaloader
+        insta = Instaloader()
+        post_id = self.download_link.split("/")[-2]
+        print(f"self.download_link {self.download_link}")
+        print(f"post_id {post_id}")
+        print(f"dowload_path {self.download_path}")
+        post = Post.from_shortcode(insta.context, post_id)
+        standard_media_dump_post_path = f"{DOWNLOAD_REPOSITORY}\\post_{post_id}"
+        is_downloaded = insta.download_post(post, target=standard_media_dump_post_path)
+        if is_downloaded:
+            ## MOVE FILE DESCRITPION TO THE DOWNLOAD PATH
+            for file in os.listdir(standard_media_dump_post_path):
+                if file.endswith(".mp4"):
+                    shutil.move(os.path.join(standard_media_dump_post_path, file), self.download_path+f"\\{file}")
+                    os.rename(self.download_path+f"\\{file}", self.download_path+f"\\{self.filename}.mp4")
+                elif file.endswith(".txt"):
+                    shutil.move(os.path.join(standard_media_dump_post_path, file), self.download_path+f"\\{file}")
+                    os.rename(self.download_path+f"\\{file}", self.download_path+f"\\{self.filename}.txt")
+                else:
+                    ## REMOVE FILE
+                    os.remove(os.path.join(standard_media_dump_post_path, file))
+            ## REMOVE EMPTY FOLDER
+            os.rmdir(standard_media_dump_post_path)
+            return True
+        else:
+            return False
+        
+
+        
+
 
 
 ##############################################################################################################
